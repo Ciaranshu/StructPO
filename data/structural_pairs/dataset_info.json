@@ -1,0 +1,12 @@
+{
+  "structural_dpo_pairs": {
+    "file_name": "structural_dpo_pairs.json",
+    "formatting": "sharegpt",
+    "ranking": true,
+    "columns": {
+      "messages": "conversations",
+      "chosen": "chosen",
+      "rejected": "rejected"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+# StructPO: Structural Preference Optimization for Reasoning Quality
+# Core dependencies
+pydantic>=2.0
+numpy>=1.24
+tqdm>=4.65
+
+# Training (LLaMA-Factory ecosystem)
+# Install separately: pip install llamafactory==0.9.3
+# Install separately: pip install deepspeed==0.16.9
+
+# Evaluation (vLLM)
+# Install in separate env: pip install vllm>=0.11.0
+
+# Analysis
+matplotlib>=3.7

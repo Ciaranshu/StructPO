@@ -1,0 +1,42 @@
+### StructPO Stage 1: SFT on DSE-Cleaned LIMO
+### Qwen3-4B, Full fine-tuning with DeepSpeed ZeRO-2
+### Ported from DecoR training config
+
+### Model
+model_name_or_path: Ciaranshu/decor-qwen3-4b-dse  # Or local path
+trust_remote_code: true
+
+### Method
+stage: sft
+do_train: true
+finetuning_type: full
+deepspeed: configs/deepspeed/ds_zero2.json
+
+### Dataset
+dataset_dir: data/limo_cleaned
+dataset: limo_dse
+template: qwen3
+cutoff_len: 16384
+preprocessing_num_workers: 16
+overwrite_cache: true
+
+### Training hyperparameters (following LIMO recipe)
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 4
+gradient_checkpointing: true
+learning_rate: 5.0e-6
+num_train_epochs: 15
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true
+ddp_timeout: 180000000
+
+### Logging & saving
+logging_steps: 10
+save_strategy: "no"
+output_dir: models/structpo-qwen3-4b-stage1
+overwrite_output_dir: true
+report_to: none
+
+### Flash attention
+flash_attn: sdpa

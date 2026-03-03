@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Models (too large for git)
+models/
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# Logs
+logs/
+*.log
+wandb/
+
+# Large data files (use git-lfs or HuggingFace for these)
+# data/limo_cleaned/*.json is tracked (small enough ~25MB each)
+data/eval_results/
+data/rollouts/
+*.jsonl

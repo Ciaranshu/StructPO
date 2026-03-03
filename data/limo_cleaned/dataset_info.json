@@ -1,0 +1,42 @@
+{
+  "limo_original": {
+    "file_name": "cleaned/limo_original.json",
+    "formatting": "sharegpt",
+    "columns": {
+      "messages": "conversations",
+      "system": "system"
+    }
+  },
+  "limo_dse": {
+    "file_name": "cleaned/limo_dse.json",
+    "formatting": "sharegpt",
+    "columns": {
+      "messages": "conversations",
+      "system": "system"
+    }
+  },
+  "limo_noverif": {
+    "file_name": "cleaned/limo_noverif.json",
+    "formatting": "sharegpt",
+    "columns": {
+      "messages": "conversations",
+      "system": "system"
+    }
+  },
+  "limo_liveverif": {
+    "file_name": "cleaned/limo_liveverif.json",
+    "formatting": "sharegpt",
+    "columns": {
+      "messages": "conversations",
+      "system": "system"
+    }
+  },
+  "limo_keywordclean": {
+    "file_name": "cleaned/limo_keywordclean.json",
+    "formatting": "sharegpt",
+    "columns": {
+      "messages": "conversations",
+      "system": "system"
+    }
+  }
+}
