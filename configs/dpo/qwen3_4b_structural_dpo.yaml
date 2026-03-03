@@ -2,8 +2,8 @@
 ### Qwen3-4B, starting from Stage 1 DSE-SFT checkpoint
 ### Uses structural preference pairs (DSR-based, not length-based)
 
-### Model (start from Stage 1 checkpoint)
-### Download first: huggingface-cli download Ciaranshu/decor-qwen3-4b-dse --local-dir models/decor-qwen3-4b-dse
+### Model (start from Stage 1 DSE-SFT checkpoint)
+### On BriCS: bash scripts/download_models.sh (symlinks into models/)
 model_name_or_path: models/decor-qwen3-4b-dse
 trust_remote_code: true
 
@@ -36,7 +36,8 @@ ddp_timeout: 180000000
 
 ### Logging & saving
 logging_steps: 5
-save_strategy: "no"
+save_strategy: epoch
+save_total_limit: 2
 output_dir: models/structpo-qwen3-4b-stage2
 overwrite_output_dir: true
 report_to: none

@@ -8,8 +8,12 @@ Usage:
 """
 
 import json
+import sys
 import argparse
 from pathlib import Path
+
+# Ensure project root is on path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.preference_builder.annotator import annotate_trace
 from src.preference_builder.pair_builder import build_all_pairs, AnnotatedTrace

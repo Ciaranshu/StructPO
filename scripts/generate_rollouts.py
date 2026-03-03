@@ -110,6 +110,10 @@ def generate_rollouts(
         from vllm import LLM, SamplingParams
     except ImportError:
         raise ImportError("vLLM required. Install: pip install vllm>=0.11.0")
+    from transformers import AutoTokenizer
+    
+    # Initialize tokenizer for chat template
+    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
     
     # Initialize model
     llm = LLM(
@@ -117,34 +121,58 @@ def generate_rollouts(
         trust_remote_code=True,
         max_model_len=32768,
         tensor_parallel_size=1,
+        dtype="bfloat16",
     )
+    
+    # Stop tokens: end of assistant turn
+    stop_token_ids = [
+        tokenizer.convert_tokens_to_ids('<|im_end|>'),
+        tokenizer.eos_token_id,
+    ]
+    # Filter out None values
+    stop_token_ids = [t for t in stop_token_ids if t is not None]
     
     sampling_params = SamplingParams(
         temperature=temperature,
         max_tokens=max_tokens,
         n=num_rollouts,
+        stop_token_ids=stop_token_ids,
     )
     
-    # Format prompts
+    # Format prompts using tokenizer's chat template
     prompts = []
     for p in problems:
-        # Use Qwen3 chat template format
-        prompt = f"<|im_start|>user\n{p['problem_text']}<|im_end|>\n<|im_start|>assistant\n"
+        messages = [{'role': 'user', 'content': p['problem_text']}]
+        prompt = tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True,
+            enable_thinking=True,  # Allow model to think/reason
+        )
         prompts.append(prompt)
     
     print(f"Generating {num_rollouts} rollouts for {len(problems)} problems...")
+    print(f"Model: {model_path}")
+    print(f"Temperature: {temperature}, Max tokens: {max_tokens}")
+    print(f"Stop token IDs: {stop_token_ids}")
+    print(f"Sample prompt preview: {prompts[0][:200]}...")
+    
     outputs = llm.generate(prompts, sampling_params)
     
     results = []
+    total_correct = 0
+    total_traces = 0
     for problem, output in zip(problems, outputs):
         traces = []
         for completion in output.outputs:
             answer = extract_boxed_answer(completion.text)
             is_correct = check_correctness(answer, problem['ground_truth'])
+            total_traces += 1
+            if is_correct:
+                total_correct += 1
             traces.append({
                 'solution': completion.text,
                 'answer': answer,
                 'is_correct': is_correct,
+                'num_tokens': len(completion.token_ids),
             })
         results.append({
             'problem_id': problem['problem_id'],
@@ -152,6 +180,19 @@ def generate_rollouts(
             'ground_truth': problem['ground_truth'],
             'traces': traces,
         })
+    
+    # Summary statistics
+    print(f"\n=== Rollout Generation Summary ===")
+    print(f"Problems: {len(results)}")
+    print(f"Total traces: {total_traces}")
+    print(f"Correct: {total_correct}/{total_traces} ({100*total_correct/max(total_traces,1):.1f}%)")
+    problems_with_correct = sum(1 for r in results if any(t['is_correct'] for t in r['traces']))
+    print(f"Problems with ≥1 correct: {problems_with_correct}/{len(results)} ({100*problems_with_correct/max(len(results),1):.1f}%)")
+    problems_with_pair = sum(1 for r in results 
+        if any(t['is_correct'] for t in r['traces']) and len([t for t in r['traces'] if t['is_correct']]) >= 2)
+    print(f"Problems with ≥2 correct (for DPO pairs): {problems_with_pair}/{len(results)}")
+    avg_tokens = sum(t['num_tokens'] for r in results for t in r['traces']) / max(total_traces, 1)
+    print(f"Avg tokens per trace: {avg_tokens:.0f}")
     
     return results
 
@@ -164,11 +205,17 @@ def main():
     parser.add_argument('--temperature', type=float, default=0.7)
     parser.add_argument('--max-tokens', type=int, default=16384)
     parser.add_argument('--output', required=True, help='Output path for rollouts JSON')
+    parser.add_argument('--subset', type=int, default=0,
+                        help='Only process first N problems (0 = all, for quick testing)')
     args = parser.parse_args()
     
     # Load problems
     problems = load_problems(args.dataset)
-    print(f"Loaded {len(problems)} problems")
+    if args.subset > 0:
+        problems = problems[:args.subset]
+        print(f"Loaded {len(problems)} problems (subset of {args.subset})")
+    else:
+        print(f"Loaded {len(problems)} problems")
     
     # Generate rollouts
     results = generate_rollouts(
