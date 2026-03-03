@@ -1,17 +1,18 @@
 #!/bin/bash
 #SBATCH --job-name=structpo-sft
+#SBATCH --account=brics.u5gx
+#SBATCH --partition=workq
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gres=gpu:2
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=128G
+#SBATCH --gpus=2
+#SBATCH --cpus-per-task=144
 #SBATCH --time=12:00:00
 #SBATCH --output=logs/sft_%j.out
 #SBATCH --error=logs/sft_%j.err
 
 # ============================================================
 # StructPO Stage 1: SFT on DSE-Cleaned Data
-# Adapt paths for your HPC system (CSD3 / BriCS)
+# Target: Isambard-AI Phase 2 (BriCS) — GH200, aarch64
 # ============================================================
 
 set -euo pipefail
@@ -19,15 +20,13 @@ set -euo pipefail
 # --- Configuration ---
 CONFIG=${1:-configs/sft/qwen3_4b_dse_sft.yaml}
 NPROC_PER_NODE=2
+WORKDIR=/home/u5gx/cs2175.u5gx/workspace/StructPO
 
 # --- Environment ---
-# Uncomment and adjust for your system:
-# module purge
-# conda activate structpo
-
-# CUDA setup (adjust for your cluster)
-# export CUDA_HOME=/usr/local/software/cuda/12.1
-# export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+module load cuda/12.6
+export MAMBA_ROOT_PREFIX=/home/u5gx/cs2175.u5gx/micromamba
+eval "$(/home/u5gx/cs2175.u5gx/bin/micromamba shell hook -s bash)"
+micromamba activate structpo
 
 # --- Avoid port collision on shared nodes ---
 MASTER_PORT=$((29500 + SLURM_JOB_ID % 1000))
@@ -39,6 +38,11 @@ echo "Master port: $MASTER_PORT"
 echo "Node: $(hostname)"
 echo "Job ID: $SLURM_JOB_ID"
 echo "Start: $(date)"
+echo "Python: $(which python)"
+nvidia-smi --list-gpus
+
+cd $WORKDIR
+mkdir -p logs
 
 # --- Launch ---
 deepspeed \
