@@ -2,8 +2,9 @@
 ### Qwen3-4B, Full fine-tuning with DeepSpeed ZeRO-2
 ### Ported from DecoR training config
 
-### Model
-model_name_or_path: Ciaranshu/decor-qwen3-4b-dse  # Or local path
+### Model (base Qwen3 — Stage 1 trains from scratch, not from DSE checkpoint)
+### Download first: huggingface-cli download Qwen/Qwen3-4B --local-dir models/Qwen3-4B
+model_name_or_path: models/Qwen3-4B
 trust_remote_code: true
 
 ### Method

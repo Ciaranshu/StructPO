@@ -17,22 +17,80 @@ Requirements:
     pip install vllm>=0.11.0
 """
 
+import re
 import json
 import argparse
 from pathlib import Path
 
 
+def extract_boxed_answer(text: str) -> str:
+    """Extract the last \\boxed{...} answer from a solution."""
+    # Find all \boxed{...} patterns (handle nested braces)
+    matches = []
+    i = 0
+    while i < len(text):
+        idx = text.find(r'\boxed{', i)
+        if idx == -1:
+            break
+        # Find matching closing brace
+        depth = 0
+        start = idx + len(r'\boxed{')
+        for j in range(start, len(text)):
+            if text[j] == '{':
+                depth += 1
+            elif text[j] == '}':
+                if depth == 0:
+                    matches.append(text[start:j])
+                    i = j + 1
+                    break
+                depth -= 1
+        else:
+            i = start
+            break
+    return matches[-1].strip() if matches else ''
+
+
+def normalize_answer(ans: str) -> str:
+    """Normalize a math answer for comparison."""
+    ans = ans.strip()
+    # Remove common LaTeX wrappers
+    for prefix in [r'\text{', r'\mathrm{', r'\mathbf{']:
+        if ans.startswith(prefix) and ans.endswith('}'):
+            ans = ans[len(prefix):-1]
+    # Normalize fractions
+    ans = ans.replace(r'\dfrac', r'\frac')
+    # Remove spaces
+    ans = re.sub(r'\s+', '', ans)
+    # Remove trailing period
+    ans = ans.rstrip('.')
+    return ans
+
+
+def check_correctness(predicted: str, ground_truth: str) -> bool:
+    """Check if predicted answer matches ground truth."""
+    pred_norm = normalize_answer(predicted)
+    gt_norm = normalize_answer(ground_truth)
+    if not pred_norm:
+        return False
+    return pred_norm == gt_norm
+
+
 def load_problems(dataset_path: str) -> list[dict]:
-    """Load problems from LIMO-format dataset."""
+    """Load problems from LIMO-format dataset.
+    
+    Extracts the boxed answer from the assistant response as ground truth.
+    """
     data = json.loads(Path(dataset_path).read_text())
     problems = []
     for item in data:
         conversations = item.get('conversations', [])
         if len(conversations) >= 2:
+            full_response = conversations[1]['value']
+            gt_answer = extract_boxed_answer(full_response)
             problems.append({
                 'problem_id': f"prob_{len(problems)}",
                 'problem_text': conversations[0]['value'],
-                'ground_truth': conversations[1]['value'],
+                'ground_truth': gt_answer,  # Just the boxed answer, not full trace
             })
     return problems
 
@@ -81,10 +139,12 @@ def generate_rollouts(
     for problem, output in zip(problems, outputs):
         traces = []
         for completion in output.outputs:
+            answer = extract_boxed_answer(completion.text)
+            is_correct = check_correctness(answer, problem['ground_truth'])
             traces.append({
                 'solution': completion.text,
-                'answer': '',  # TODO: extract boxed answer
-                'is_correct': False,  # TODO: check against ground truth
+                'answer': answer,
+                'is_correct': is_correct,
             })
         results.append({
             'problem_id': problem['problem_id'],
