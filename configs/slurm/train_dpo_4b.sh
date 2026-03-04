@@ -4,9 +4,10 @@
 #SBATCH --partition=workq
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gpus=1
-#SBATCH --time=6:00:00
-#SBATCH --time-min=2:00:00
+#SBATCH --gpus=4
+#SBATCH --mem=115000
+#SBATCH --time=2:00:00
+#SBATCH --time-min=0:30:00
 #SBATCH --output=logs/dpo_4b_%j.out
 #SBATCH --error=logs/dpo_4b_%j.err
 

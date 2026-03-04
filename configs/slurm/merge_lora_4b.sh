@@ -5,6 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus=1
+#SBATCH --mem=115000
 #SBATCH --time=00:30:00
 #SBATCH --time-min=00:10:00
 #SBATCH --output=logs/merge_4b_%j.out

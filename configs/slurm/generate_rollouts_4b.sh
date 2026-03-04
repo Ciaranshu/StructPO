@@ -5,6 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus=4
+#SBATCH --mem=115000
 #SBATCH --time=4:00:00
 #SBATCH --time-min=1:00:00
 #SBATCH --output=logs/rollout_4b_%j.out
