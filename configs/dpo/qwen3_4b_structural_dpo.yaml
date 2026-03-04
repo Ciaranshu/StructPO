@@ -10,7 +10,11 @@ trust_remote_code: true
 ### Method
 stage: dpo
 do_train: true
-finetuning_type: full
+finetuning_type: lora
+lora_rank: 64
+lora_alpha: 128
+lora_target: all
+lora_dropout: 0.05
 deepspeed: configs/deepspeed/ds_zero2.json
 pref_beta: 0.1
 pref_loss: sigmoid  # Standard DPO loss
@@ -19,7 +23,7 @@ pref_loss: sigmoid  # Standard DPO loss
 dataset_dir: data/structural_pairs
 dataset: structural_dpo_pairs
 template: qwen3
-cutoff_len: 16384
+cutoff_len: 8192
 preprocessing_num_workers: 16
 overwrite_cache: true
 
@@ -27,7 +31,7 @@ overwrite_cache: true
 per_device_train_batch_size: 1
 gradient_accumulation_steps: 4
 gradient_checkpointing: true
-learning_rate: 1.0e-6
+learning_rate: 5.0e-5
 num_train_epochs: 3
 lr_scheduler_type: cosine
 warmup_ratio: 0.1

@@ -4,9 +4,9 @@
 #SBATCH --partition=workq
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gpus=1
-#SBATCH --cpus-per-task=72
-#SBATCH --time=8:00:00
+#SBATCH --gpus=4
+#SBATCH --time=4:00:00
+#SBATCH --time-min=1:00:00
 #SBATCH --output=logs/rollout_4b_%j.out
 #SBATCH --error=logs/rollout_4b_%j.err
 
@@ -55,6 +55,7 @@ python scripts/generate_rollouts.py \
     --dataset "$DATASET" \
     --num-rollouts "$NUM_ROLLOUTS" \
     --temperature 0.7 \
+    --tensor-parallel 4 \
     --output "$OUTPUT" \
     $SUBSET_ARG
 

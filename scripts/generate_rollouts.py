@@ -101,6 +101,7 @@ def generate_rollouts(
     num_rollouts: int = 8,
     temperature: float = 0.7,
     max_tokens: int = 16384,
+    tensor_parallel_size: int = 1,
 ) -> list[dict]:
     """Generate multiple rollouts per problem using vLLM.
     
@@ -120,7 +121,7 @@ def generate_rollouts(
         model=model_path,
         trust_remote_code=True,
         max_model_len=32768,
-        tensor_parallel_size=1,
+        tensor_parallel_size=tensor_parallel_size,
         dtype="bfloat16",
     )
     
@@ -207,6 +208,8 @@ def main():
     parser.add_argument('--output', required=True, help='Output path for rollouts JSON')
     parser.add_argument('--subset', type=int, default=0,
                         help='Only process first N problems (0 = all, for quick testing)')
+    parser.add_argument('--tensor-parallel', type=int, default=1,
+                        help='Tensor parallel size for vLLM (number of GPUs)')
     args = parser.parse_args()
     
     # Load problems
@@ -224,6 +227,7 @@ def main():
         num_rollouts=args.num_rollouts,
         temperature=args.temperature,
         max_tokens=args.max_tokens,
+        tensor_parallel_size=args.tensor_parallel,
     )
     
     # Save

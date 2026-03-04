@@ -105,6 +105,7 @@ def evaluate_model(
     model_path: str,
     problems: list[dict],
     max_tokens: int = 16384,
+    tensor_parallel_size: int = 1,
 ) -> list[dict]:
     """Generate completions and evaluate accuracy."""
     from vllm import LLM, SamplingParams
@@ -116,7 +117,7 @@ def evaluate_model(
         model=model_path,
         trust_remote_code=True,
         max_model_len=32768,
-        tensor_parallel_size=1,
+        tensor_parallel_size=tensor_parallel_size,
         dtype="bfloat16",
     )
 
@@ -262,6 +263,8 @@ def main():
     parser.add_argument('--output', required=True, help='Output JSON path')
     parser.add_argument('--no-structural', action='store_true',
                         help='Skip structural analysis on completions')
+    parser.add_argument('--tensor-parallel', type=int, default=1,
+                        help='Tensor parallel size for vLLM (number of GPUs)')
     args = parser.parse_args()
 
     print(f"=== StructPO Evaluation ===")
@@ -280,7 +283,8 @@ def main():
         return
 
     # Run evaluation
-    results = evaluate_model(args.model, all_problems, max_tokens=args.max_tokens)
+    results = evaluate_model(args.model, all_problems, max_tokens=args.max_tokens,
+                              tensor_parallel_size=args.tensor_parallel)
 
     # Compute metrics
     metrics = compute_metrics(results)

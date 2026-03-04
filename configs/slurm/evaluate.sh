@@ -5,8 +5,8 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus=1
-#SBATCH --cpus-per-task=72
 #SBATCH --time=4:00:00
+#SBATCH --time-min=1:00:00
 #SBATCH --output=logs/eval_%j.out
 #SBATCH --error=logs/eval_%j.err
 

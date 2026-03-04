@@ -4,9 +4,9 @@
 #SBATCH --partition=workq
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gpus=2
-#SBATCH --cpus-per-task=144
-#SBATCH --time=4:00:00
+#SBATCH --gpus=1
+#SBATCH --time=6:00:00
+#SBATCH --time-min=2:00:00
 #SBATCH --output=logs/dpo_4b_%j.out
 #SBATCH --error=logs/dpo_4b_%j.err
 
@@ -19,14 +19,17 @@
 set -euo pipefail
 
 CONFIG=${1:-configs/dpo/qwen3_4b_structural_dpo.yaml}
-NPROC_PER_NODE=2
+NPROC_PER_NODE=${SLURM_GPUS_ON_NODE:-2}
 WORKDIR=/home/u5gx/cs2175.u5gx/workspace/StructPO
 
 # --- Environment ---
 module load cuda/12.6
 export MAMBA_ROOT_PREFIX=/home/u5gx/cs2175.u5gx/micromamba
 eval "$(/home/u5gx/cs2175.u5gx/bin/micromamba shell hook -s bash)"
-micromamba activate comprl
+micromamba activate structpo-train
+
+# GH200 workaround: DeepSpeed misdetects accelerator as CPU
+export DS_ACCELERATOR=cuda
 
 # --- Avoid port collision on shared nodes ---
 MASTER_PORT=$((29500 + SLURM_JOB_ID % 1000))
