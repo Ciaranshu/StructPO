@@ -1,1 +1,1 @@
-"""StructPO: Structural Preference Optimization for Reasoning Quality."""
+"""src namespace — use 'from structpo.xxx' for imports."""

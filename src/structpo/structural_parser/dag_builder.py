@@ -2,11 +2,18 @@
 Dependency DAG Builder for Reasoning Traces
 
 Builds a lightweight directed acyclic graph (DAG) from classified reasoning steps.
-Edges represent logical dependencies between steps.
+Edges represent logical dependencies between steps. Combined with backward
+reachability, this identifies which steps are structurally connected to the
+conclusion (live/productive) vs disconnected (dead/wasteful).
 
-Two layers of edges:
-1. Sequential chain: each step depends on the previous (baseline)
+Three layers of edges:
+1. Adjacent derivation chain: consecutive derivation/computation steps
 2. Content-overlap edges: shared variable names, numbers, or expressions
+3. Conclusion fallback: last-resort connection for orphan conclusions
+
+Steps that introduce new topics without sharing symbols with later steps
+become structurally dead — distinguishing productive exploration (connected
+to the reasoning graph) from wasteful exploration (disconnected tangents).
 
 This is the fast, API-free alternative to LLM-based R-IR parsing.
 Runtime: <5ms per trace.

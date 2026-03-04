@@ -117,12 +117,15 @@ def generate_rollouts(
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
     
     # Initialize model
+    # disable_custom_all_reduce: workaround for GH200 CUDA graph crash
+    # (custom_all_reduce.cuh:455 'invalid argument' during warmup with TP>1)
     llm = LLM(
         model=model_path,
         trust_remote_code=True,
         max_model_len=32768,
         tensor_parallel_size=tensor_parallel_size,
         dtype="bfloat16",
+        disable_custom_all_reduce=True,
     )
     
     # Stop tokens: end of assistant turn

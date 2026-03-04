@@ -1,51 +1,50 @@
-### StructPO Stage 2: Structural Preference DPO
-### Qwen3-8B, LoRA, starting from Stage 1 LoRA checkpoint
-### For BriCS GH200 (96GB per GPU)
+### StructPO Stage 1: SFT on DSE-Cleaned LIMO — RESUME from checkpoint
+### Qwen3-8B, LoRA fine-tuning with DeepSpeed ZeRO-2
+### For BriCS GH200 (96GB per GPU) — LoRA required for 8B+
+### This config resumes from the latest checkpoint in output_dir.
 
-### Model (start from Stage 1 LoRA checkpoint)
+### Model
 model_name_or_path: /home/u5gx/cs2175.u5gx/workspace/CompRL/hpc/models/Qwen3-8B
-adapter_name_or_path: models/structpo-qwen3-8b-stage1-lora
 trust_remote_code: true
 
 ### Method
-stage: dpo
+stage: sft
 do_train: true
 finetuning_type: lora
 deepspeed: configs/deepspeed/ds_zero2.json
-pref_beta: 0.1
-pref_loss: sigmoid
 
-### LoRA config (same as Stage 1)
+### LoRA config
 lora_rank: 64
 lora_alpha: 128
 lora_dropout: 0.05
 lora_target: all
 
 ### Dataset
-dataset_dir: data/structural_pairs
-dataset: structural_dpo_pairs
+dataset_dir: data/limo_cleaned
+dataset: limo_dse
 template: qwen3
 cutoff_len: 16384
 preprocessing_num_workers: 16
 overwrite_cache: true
 
-### Training hyperparameters
+### Training hyperparameters (following LIMO recipe, adapted for LoRA)
 per_device_train_batch_size: 1
 gradient_accumulation_steps: 8
 gradient_checkpointing: true
-learning_rate: 5.0e-6
-num_train_epochs: 3
+learning_rate: 2.0e-5
+num_train_epochs: 10
 lr_scheduler_type: cosine
 warmup_ratio: 0.1
 bf16: true
 ddp_timeout: 180000000
 
 ### Logging & saving
-logging_steps: 5
+logging_steps: 10
 save_strategy: epoch
 save_total_limit: 2
-output_dir: models/structpo-qwen3-8b-stage2-lora
-overwrite_output_dir: true
+output_dir: models/structpo-qwen3-8b-stage1-lora
+overwrite_output_dir: false
+resume_from_checkpoint: true
 report_to: none
 
 ### Flash attention

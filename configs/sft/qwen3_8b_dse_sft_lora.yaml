@@ -3,7 +3,7 @@
 ### For BriCS GH200 (96GB per GPU) — LoRA required for 8B+
 
 ### Model
-model_name_or_path: models/Qwen3-8B
+model_name_or_path: /home/u5gx/cs2175.u5gx/workspace/CompRL/hpc/models/Qwen3-8B
 trust_remote_code: true
 
 ### Method
@@ -43,7 +43,6 @@ save_strategy: epoch
 save_total_limit: 2
 output_dir: models/structpo-qwen3-8b-stage1-lora
 overwrite_output_dir: true
-report_to: none
 
 ### Flash attention
 flash_attn: sdpa

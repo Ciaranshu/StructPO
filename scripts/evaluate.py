@@ -26,6 +26,7 @@ from pathlib import Path
 from collections import defaultdict
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'src'))
 
 from scripts.generate_rollouts import extract_boxed_answer, normalize_answer, check_correctness
 
@@ -235,7 +236,7 @@ def compute_metrics(results: list[dict]) -> dict:
 
 def run_structural_analysis(results: list[dict]) -> dict:
     """Run structural analysis on completions to get DSR stats."""
-    from src.structural_parser.reachability import full_structural_analysis
+    from structpo.structural_parser.reachability import full_structural_analysis
 
     dsrs = []
     for r in results:

@@ -22,17 +22,17 @@ from pathlib import Path
 # Ensure src is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.structural_parser.classifier import (
+from structpo.structural_parser.classifier import (
     classify_paragraph, classify_trace, segment_trace,
     compute_verification_density, get_type_distribution,
 )
-from src.structural_parser.dag_builder import build_dag, _extract_symbols
-from src.structural_parser.reachability import (
+from structpo.structural_parser.dag_builder import build_dag, _extract_symbols
+from structpo.structural_parser.reachability import (
     backward_reachability, compute_dsr, compute_typed_dsr,
     full_structural_analysis, get_dead_steps, get_live_steps,
 )
-from src.preference_builder.annotator import annotate_trace
-from src.preference_builder.pair_builder import (
+from structpo.preference_builder.annotator import annotate_trace
+from structpo.preference_builder.pair_builder import (
     build_efficiency_pairs, build_productive_exploration_pairs,
     build_direction_pairs, build_all_pairs, AnnotatedTrace,
 )

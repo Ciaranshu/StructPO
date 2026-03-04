@@ -71,8 +71,8 @@ def analyze_pairs_only(pairs: list[dict]) -> str:
 
 def analyze_with_rollouts(rollouts_path: str) -> str:
     """Full analysis with re-annotation from rollouts."""
-    from src.preference_builder.annotator import annotate_trace
-    from src.preference_builder.pair_builder import (
+    from structpo.preference_builder.annotator import annotate_trace
+    from structpo.preference_builder.pair_builder import (
         build_efficiency_pairs, build_productive_exploration_pairs,
         build_direction_pairs, AnnotatedTrace,
     )

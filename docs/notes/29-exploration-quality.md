@@ -156,3 +156,36 @@ For COLM paper, this analysis provides:
 3. **Future work direction** (§6): Typed DSE that distinguishes between "true waste" and "useful scaffolding" based on step type rather than reachability alone
 
 4. **The key insight**: Dead Step Elimination is not about removing ALL dead steps — it's about removing the RIGHT dead steps. The current paper solves the "what is dead" question (structural reachability). The next paper should solve the "what is waste" question (cognitive utility).
+
+---
+
+## 7. Update: StructPO Resolves This (2026-03-04)
+
+StructPO IS the solution to the "what is waste" question. The three-type structural
+preference pairs directly address the exploration quality problem identified above.
+
+### New Evidence (4B DSE-SFT on MATH-500, 82.8% accuracy)
+
+| Finding | Data | Implication |
+|:--------|:-----|:------------|
+| DSR ⊥ correctness | r = 0.011 | DSR measures reasoning quality, not outcome |
+| Overthinking | Incorrect: 2.1× tokens, 2.3× steps | Unguided exploration hurts |
+| Exploration scales with difficulty | L1: 12% → L5: 23% correct need DSR≥0.3 | Hard problems NEED exploration |
+| Productive vs wasteful | Correct+HighDSR: 97 steps, d/l=3.5; Incorrect: 219 steps, d/l=4.3 | Productive exploration is directed |
+| Not length | 27% chosen are longer than rejected | Structure ≠ Length |
+| Subject-dependent | Precalculus 44% vs Algebra 18% need exploration | Connects to GPQA paradox |
+
+### Three Pair Types = Complete Exploration Policy
+
+| Pair Type | §5 framing (this note) | StructPO framing |
+|:----------|:----------------------|:-----------------|
+| Efficiency (45%) | "Remove waste" | When NOT to explore — derive directly on clear problems |
+| Productive Exploration (33%) | "Prefer live verification" | HOW to verify — discover new info, not confirm obvious |
+| Direction (22%) | "Correct > incorrect" | WHEN to stop — abandon dead ends early |
+
+### Resolution of the DecoR Paradox (§4, F1-F3)
+
+- **MATH**: DSR ⊥ correctness → dead steps are mostly true waste → Efficiency pairs dominate
+- **GPQA**: DSR correlates with correctness → dead steps include productive scaffolding → Productive Exploration + Direction pairs preserve useful exploration
+
+StructPO Stage 2 DPO teaches a policy that handles BOTH regimes — unlike DSE (§5) which only handles the MATH regime. This resolves §5.4 ("The Real Solution Is NOT Adaptive-DSE") — the real solution is structural *preference learning*, not adaptive *elimination*.

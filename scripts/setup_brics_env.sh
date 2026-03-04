@@ -73,7 +73,7 @@ print(f'  CUDA available: {torch.cuda.is_available()}')
 import pydantic
 print(f'  pydantic: {pydantic.__version__}')
 
-from src.structural_parser.reachability import full_structural_analysis
+from structpo.structural_parser.reachability import full_structural_analysis
 r = full_structural_analysis('Let me compute 2+2.\n\n2+2=4.\n\nLet me verify: 2+2=4. Yes.\n\nSo the answer is \\\boxed{4}.')
 print(f'  Structural parser: {r[\"num_steps\"]} steps, DSR={r[\"dsr\"]:.0%}')
 

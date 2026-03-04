@@ -2,11 +2,16 @@
 Backward Reachability Analysis
 
 Given a dependency DAG, performs backward reachability from conclusion nodes
-to determine which steps are "live" (contribute to the final answer) and
-which are "dead" (structurally unreachable from the conclusion).
+to determine which steps are "live" (structurally connected to the final
+answer — productive) and which are "dead" (structurally unreachable from
+the conclusion — potentially wasteful).
 
 This is the core algorithm behind Dead Step Elimination (DSE) and the
-structural preference signal used in StructPO.
+structural preference signal used in StructPO. Note that "dead" does not
+mean "useless" — for hard problems, some dead exploration is necessary
+and productive (see note 29 §7). StructPO's DPO pairs use DSR to teach
+models to distinguish productive from wasteful exploration, not to
+eliminate all dead steps.
 
 Ported from DecoR poc/poc2_dse.py
 """

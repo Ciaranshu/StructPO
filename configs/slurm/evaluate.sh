@@ -29,6 +29,9 @@ export MAMBA_ROOT_PREFIX=/home/u5gx/cs2175.u5gx/micromamba
 eval "$(/home/u5gx/cs2175.u5gx/bin/micromamba shell hook -s bash)"
 micromamba activate structpo-eval
 
+# Load API keys (needed for gated datasets like GPQA)
+[ -f /home/u5gx/cs2175.u5gx/.env ] && set -a && source /home/u5gx/cs2175.u5gx/.env && set +a
+
 echo "=== StructPO Evaluation ==="
 echo "Model: $MODEL"
 echo "Benchmarks: $BENCHMARKS"

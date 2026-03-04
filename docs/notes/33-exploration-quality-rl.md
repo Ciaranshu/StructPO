@@ -3,6 +3,13 @@
 **Date**: 2026-03-02
 **Context**: 基于DecoR全部empirical findings + 2026最新RL进展的深度分析
 
+> **Status (2026-03-04)**: Direction C (Structure-Informed Exploration Curriculum) was
+> chosen and implemented as **StructPO**. Stage 1 (DSE-SFT) validated at 82.8% on
+> MATH-500. Stage 2 (Structural DPO) uses the three preference pair types described in
+> §4.3 below. The core narrative has been upgraded from "eliminate dead steps" to
+> "teach exploration quality" — see note 29 §7 and CROSS_PROJECT_STRATEGY.md §3.1.
+> Code and experiment framework unchanged; only framing updated.
+
 ---
 
 ## 1. 重新审视我们到底发现了什么

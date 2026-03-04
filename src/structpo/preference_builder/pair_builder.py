@@ -4,27 +4,35 @@ Structural Preference Pair Builder
 Constructs DPO preference pairs from annotated rollouts using
 structural quality metrics (not length, not perplexity).
 
-Four types of preference pairs:
+Core thesis: Dead steps are not uniformly bad. For hard problems,
+exploration is necessary — the question is not "how to eliminate
+exploration" but "how to make exploration productive." These four
+pair types jointly teach a complete exploration policy:
 
 Type 1 — Structural Efficiency:
   Preferred:  correct + low DSR (<0.15)
   Rejected:   correct + high DSR (>0.35)
-  Teaches: don't waste tokens when you know the answer
+  Teaches: when the solution path is clear, don't explore unnecessarily
 
 Type 2 — Productive Exploration:
   Preferred:  correct + high live_verification_rate
   Rejected:   correct + low live_verification_rate (dead verification)
-  Teaches: verification should find errors, not confirm the obvious
+  Teaches: verification should discover new information, not confirm
+  the obvious — prefer live verification over dead verification
 
 Type 3 — Exploration Direction:
-  Preferred:  correct + exploration leads to derivation
-  Rejected:   incorrect + lots of exploration but no useful derivation
-  Teaches: explore with direction, not randomly
+  Preferred:  correct + low DSR (directed exploration)
+  Rejected:   incorrect + high DSR (undirected exploration)
+  Teaches: when you must explore, maintain direction — abandon dead
+  ends early rather than deepening them
 
-Type 4 — Cross-domain Deliberation:
-  Preferred:  correct + verification in hard/cross-domain problems
-  Rejected:   incorrect + no verification in hard/cross-domain problems
-  Teaches: on hard problems, deliberation is productive
+Type 4 — Structural Contrastive (motif-level):
+  Preferred:  trace with motif excised/replaced, or clean rollout
+  Rejected:   trace containing structural anti-pattern (motif)
+  Teaches: which specific patterns are toxic — dead cascades,
+  verification theater, abandoned branches, circular revisits.
+  Operates at motif level (local, transferable across problems).
+  See contrastive_builder.py for 3 strategies (excision/replacement/contrast).
 """
 
 import json
@@ -251,7 +259,11 @@ def build_all_pairs(
     productive_pairs = build_productive_exploration_pairs(traces_by_problem)
     direction_pairs = build_direction_pairs(traces_by_problem)
     
-    all_pairs = efficiency_pairs + productive_pairs + direction_pairs
+    # Type 4: Structural Contrastive (motif-level)
+    from .contrastive_builder import build_contrastive_pairs as _build_contrastive
+    contrastive_pairs = _build_contrastive(annotated_traces)
+    
+    all_pairs = efficiency_pairs + productive_pairs + direction_pairs + contrastive_pairs
     
     # Shuffle
     random.seed(seed)
@@ -261,6 +273,7 @@ def build_all_pairs(
     print(f"  Type 1 (Efficiency):            {len(efficiency_pairs)}")
     print(f"  Type 2 (Productive Exploration): {len(productive_pairs)}")
     print(f"  Type 3 (Direction):              {len(direction_pairs)}")
+    print(f"  Type 4 (Contrastive):            {len(contrastive_pairs)}")
     
     # Save in LLaMA-Factory DPO format if requested
     if output_path and problem_texts:
