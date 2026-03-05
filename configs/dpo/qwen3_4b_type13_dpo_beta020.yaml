@@ -1,0 +1,50 @@
+### StructPO Stage 2: Type 1-3 Structural DPO (β=0.20)
+### Qwen3-4B, starting from Stage 1 DSE-SFT checkpoint
+### Uses Type 1-3 pairs only (2371 pairs from K=8 rollouts)
+### β=0.20 was best for GPQA on greedy pairs; test on K=8 pairs
+
+### Model (start from Stage 1 DSE-SFT checkpoint)
+model_name_or_path: models/decor-qwen3-4b-dse
+trust_remote_code: true
+
+### Method
+stage: dpo
+do_train: true
+finetuning_type: lora
+lora_rank: 64
+lora_alpha: 128
+lora_target: all
+lora_dropout: 0.05
+deepspeed: configs/deepspeed/ds_zero2.json
+pref_beta: 0.20
+pref_loss: sigmoid
+
+### Dataset
+dataset_dir: data/structural_pairs
+dataset: 4b_type13_dpo_pairs
+template: qwen3
+cutoff_len: 8192
+preprocessing_num_workers: 16
+overwrite_cache: true
+
+### Training hyperparameters
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 1
+gradient_checkpointing: true
+learning_rate: 5.0e-5
+num_train_epochs: 3
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true
+ddp_timeout: 180000000
+
+### Logging & saving
+logging_steps: 5
+save_strategy: epoch
+save_total_limit: 2
+output_dir: models/structpo-qwen3-4b-type13-beta020
+overwrite_output_dir: true
+report_to: none
+
+### Flash attention
+flash_attn: sdpa
