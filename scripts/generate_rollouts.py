@@ -59,6 +59,8 @@ def normalize_answer(ans: str) -> str:
             ans = ans[len(prefix):-1]
     # Normalize fractions
     ans = ans.replace(r'\dfrac', r'\frac')
+    # Remove \left and \right (cosmetic LaTeX, no mathematical meaning)
+    ans = ans.replace(r'\left', '').replace(r'\right', '')
     # Remove spaces
     ans = re.sub(r'\s+', '', ans)
     # Remove trailing period
@@ -211,15 +213,20 @@ def main():
     parser.add_argument('--output', required=True, help='Output path for rollouts JSON')
     parser.add_argument('--subset', type=int, default=0,
                         help='Only process first N problems (0 = all, for quick testing)')
+    parser.add_argument('--offset', type=int, default=0,
+                        help='Skip first N problems (for sharded generation)')
     parser.add_argument('--tensor-parallel', type=int, default=1,
                         help='Tensor parallel size for vLLM (number of GPUs)')
     args = parser.parse_args()
-    
+
     # Load problems
     problems = load_problems(args.dataset)
+    if args.offset > 0:
+        problems = problems[args.offset:]
+        print(f"Offset: skipping first {args.offset} problems")
     if args.subset > 0:
         problems = problems[:args.subset]
-        print(f"Loaded {len(problems)} problems (subset of {args.subset})")
+        print(f"Loaded {len(problems)} problems (subset of {args.subset}, offset {args.offset})")
     else:
         print(f"Loaded {len(problems)} problems")
     
