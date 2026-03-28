@@ -1,106 +1,71 @@
-# StructPO: NeurIPS 2026 Experiment Plan
+# StructPRM: NeurIPS 2026 Experiment Plan
 
 > **Target**: NeurIPS 2026 (deadline ~May 15, 2026)
-> **Goal**: Strong Accept — novel structural preference optimization for reasoning quality
-> **Compute**: ~1,000 NHR on Isambard-AI (4× GH200 per node), expires Mar 22
+> **Goal**: Strong Accept — first graph-structured Process Reward Model for reasoning
+> **Compute**: ~5,365 GPU-hrs on Cambridge HPC (A100-80GB), SL3 free tier
+> **Updated**: 2026-03-28 — Pivoted from StructPO (DPO pairs) to StructPRM (graph-structured PRM)
 
 ## Paper Thesis
 
-> Standard outcome-based RL is blind to structural waste because dead steps are
-> correctness-independent. We propose StructPO: a three-stage curriculum that uses
-> DAG reachability to teach models (1) efficient reasoning, (2) when exploration
-> is productive, and (3) how to adapt exploration to problem difficulty.
+> All existing Process Reward Models treat reasoning as a linear sequence.
+> They evaluate "is this step correct?" but cannot evaluate "does this step
+> structurally contribute to the answer?" This blind spot is the root cause
+> of verification theater, echo traps, and policy collapse in reasoning RL.
+>
+> We propose StructPRM: the first graph-structured PRM that uses DAG backward
+> reachability to score structural contribution. StructPRM provides reward signal
+> orthogonal to both correctness and length, preserving gradient signal in 95%
+> of cases where outcome reward is saturated.
 
 ## Phase Overview
 
-| Phase | Focus | Timeline | NHR | Key Deliverable |
-|:------|:------|:---------|----:|:----------------|
-| [Phase 1](phase1_foundation.md) | Foundation: 4B Validation + 8B SFT | Day 1-5 | 40 | Stage 1 baselines across 4B/8B |
-| [Phase 2](phase2_structural_dpo.md) | Core: Structural DPO (Stage 2) | Day 5-10 | 120 | **Main result tables** |
-| [Phase 3](phase3_ablations.md) | Ablations + Baselines | Day 10-14 | 150 | Ablation tables, baseline comparisons |
-| [Phase 4](phase4_analysis.md) | Structural Behavior Analysis | Day 14-17 | 80 | Analysis figures, qualitative examples |
-| [Phase 5](phase5_writing.md) | Paper Writing + Final Experiments | Day 17+ | 100 | Camera-ready experiments |
-| **Total** | | **17 days** | **~490** | |
-| **Reserve** | Buffer, re-runs, CompRL | | **~510** | |
+| Phase | Focus | GPU-hrs | Status |
+|:------|:------|--------:|:-------|
+| [Phase 1](phase1_foundation.md) | DSE-SFT baselines (4B + 8B) | ~50 | ✅ Done |
+| [Phase 2](phase2_structural_dpo.md) | StructPRM as DPO signal | ~100 | ✅ Core done |
+| [Phase 3](phase3_ablations.md) | Best-of-N + Signal ablation + Baselines | ~120 | 🔄 In progress |
+| [Phase 4](phase4_analysis.md) | Analysis + StructParser distillation | ~60 | ⏳ Pending |
+| [Phase 5](phase5_writing.md) | Paper writing + Online RL pilot | ~80 | ⏳ Pending |
+| **Total** | | **~410** | |
+| **Reserve** | Buffer, re-runs, 14B scaling | **~4,955** | |
 
-## Main Result Table (Target)
+## Main Result Tables (Target)
 
-**Table 1: Main Results on Mathematical Reasoning**
+**Table 1: Best-of-N Selection with Different Reward Models**
 
-| Model | Method | MATH-500 | GPQA Diamond | Avg DSR ↓ | Avg Tokens ↓ |
-|:------|:-------|:--------:|:------------:|:---------:|:------------:|
-| Qwen3-4B | Base (Original SFT) | 69.6% | 55.6% | ~30% | 18.7k |
-| Qwen3-4B | DSE-SFT (Stage 1) | 72.8% | 49.0% | ~15% | 15.3k |
-| Qwen3-4B | **StructPO (Stage 1+2)** | **?** | **?** | **?** | **?** |
-| Qwen3-8B | Base (Original SFT) | ? | ? | ? | ? |
-| Qwen3-8B | DSE-SFT (Stage 1) | ? | ? | ? | ? |
-| Qwen3-8B | **StructPO (Stage 1+2)** | **?** | **?** | **?** | **?** |
+| Reward Model | Signal Type | MATH-500 | Tokens ↓ | DSR ↓ |
+|:-------------|:------------|:--------:|:--------:|:-----:|
+| Random | None | baseline | baseline | baseline |
+| ORM | Correctness | ? | ? | ? |
+| Length | Token count | ? | ? | ? |
+| APR-anchor | Post-answer position | ? | ? | ? |
+| **StructPRM-L0** | Raw DSR | ? | ? | ? |
+| **StructPRM-L1** | Quality-aware structural | **?** | **?** | **?** |
+| StructPRM-L1 + ORM | Combined | ? | ? | ? |
 
-**Expected**: StructPO ≥ DSE-SFT on MATH, significantly > DSE-SFT on GPQA, lowest DSR.
+**Table 2: Signal Ablation (DPO)**
 
-**Table 2: Ablation — What Makes Structural Preferences Work?**
+| Signal | MATH-500 | GPQA | DSR |
+|:-------|:--------:|:----:|:---:|
+| Random | ? | ? | ? |
+| Length | ? | ? | ? |
+| Correctness | ? | ? | ? |
+| APR-anchor | ? | ? | ? |
+| **StructPRM-L0** | ? | ? | ? |
+| **StructPRM-L1** | **?** | **?** | **?** |
 
-| Preference Signal | MATH-500 | GPQA | DSR |
-|:------------------|:--------:|:----:|:---:|
-| Random pairs (control) | ? | ? | ? |
-| Length-based (shorter=better) | ? | ? | ? |
-| Correctness-based (correct>incorrect) | ? | ? | ? |
-| **Structural (DSR-based, ours)** | **?** | **?** | **?** |
-| Structural + Type-weighted | ? | ? | ? |
+**Table 3: Pair Type Contribution**
 
-**Table 3: DPO Hyperparameter Sensitivity**
+**Table 4: Scaling (4B → 8B → 14B)**
 
-| β_DPO | MATH-500 | GPQA | DSR | Notes |
-|:------|:--------:|:----:|:---:|:------|
-| 0.05 | ? | ? | ? | More deviation from ref |
-| 0.1 | ? | ? | ? | Default |
-| 0.2 | ? | ? | ? | Less deviation |
+## Key Findings Already Validated
 
-**Table 4: Pair Type Contribution**
-
-| Pair Types Used | # Pairs | MATH-500 | GPQA | DSR |
-|:----------------|--------:|:--------:|:----:|:---:|
-| Efficiency only | 1,074 | ? | ? | ? |
-| Productive Exploration only | 790 | ? | ? | ? |
-| Direction only | 513 | ? | ? | ? |
-| **All types (full)** | **2,377** | **?** | **?** | **?** |
-
-## Key Figures (Planned)
-
-1. **Figure 1**: Paper overview diagram (3-stage pipeline)
-2. **Figure 2**: DSR distribution: Base vs Stage 1 vs Stage 2 (violin plot)
-3. **Figure 3**: Accuracy vs DSR scatter (shows structural efficiency ≠ length)
-4. **Figure 4**: Per-difficulty breakdown (MATH L1-L5) — Stage 2 preserves hard-problem exploration
-5. **Figure 5**: Qualitative examples: preferred vs rejected reasoning traces
-6. **Figure 6**: Verification behavior analysis (live vs dead verification rates)
-
-## Compute Budget Allocation
-
-```
-StructPO (main paper):
-  Phase 1: 4B pipeline (validated)     ~10 NHR
-  Phase 1: 8B SFT + rollouts           ~30 NHR
-  Phase 2: 8B DPO × 3 β values         ~20 NHR
-  Phase 2: 4B DPO × 3 β values         ~10 NHR
-  Phase 2: Eval all models              ~30 NHR
-  Phase 3: Ablation baselines           ~80 NHR
-  Phase 3: Pair type ablations          ~40 NHR
-  Phase 4: Structural analysis runs     ~30 NHR
-  Phase 5: Final experiments            ~50 NHR
-  Buffer                                ~190 NHR
-  ────────────────────────────────
-  Subtotal:                             ~490 NHR
-
-CompRL (concurrent project):
-  14B GRPO training (resumed)           ~30 NHR
-  14B pass@k eval (base/sft/rl)         ~50 NHR
-  8B GRPO re-run + eval                 ~40 NHR
-  Compositional eval                    ~30 NHR
-  Buffer                                ~100 NHR
-  ────────────────────────────────
-  Subtotal:                             ~250 NHR
-
-Reserve:                                ~260 NHR
-  ════════════════════════════════
-  TOTAL:                                ~1,000 NHR
-```
+| Finding | Source | Date |
+|:--------|:-------|:-----|
+| DSR ⊥ correctness (r ≈ -0.21) | K=8 rollout analysis | 2026-03-28 |
+| Echo trap breaking (95% signal retention) | verify_structural_reward_variance.py | 2026-03-28 |
+| Dead step taxonomy (7 types, 8% productive) | verify_dead_step_quality.py | 2026-03-28 |
+| Signal preservation ratio 66-68% | verify_structural_reward_variance.py | 2026-03-28 |
+| Type 4 contrastive DPO failure | Exp 05, 07 | 2026-03-05 |
+| 4B DPO: MATH 82.2%, GPQA 54.0% | Exp 04 | 2026-03-07 |
+| 8B DPO: MATH 80.8% (β=0.20 best) | Exp 06 | 2026-03-08 |
