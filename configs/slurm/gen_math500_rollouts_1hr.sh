@@ -3,7 +3,6 @@
 #SBATCH --partition=ampere
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gres=gpu:4
 #SBATCH --mem=115000
 #SBATCH --time=1:00:00
 #SBATCH --output=logs/m500_roll_%j.out
@@ -12,18 +11,21 @@
 # ============================================================
 # Generate K=8 MATH-500 rollouts (sharded for 1hr jobs)
 #
+# Each shard is designed to finish within 1 hour.
+# GPU count is set via NUM_GPUS env var (default: use model-specific defaults).
+#
 # Usage:
-#   # 4B model, 4 shards of 125 problems each:
-#   for i in 0 1 2 3; do
-#     sbatch --account=COLLIER-SL3-GPU \
-#       --export=ALL,MODEL=models/decor-qwen3-4b-dse,SHARD=$i,TOTAL_SHARDS=4,MODEL_SIZE=4b \
+#   # 4B model: 1 GPU per shard, 10 shards of 50 problems (~33min each)
+#   for i in $(seq 0 9); do
+#     sbatch --account=COLLIER-SL3-GPU --gres=gpu:1 \
+#       --export=ALL,MODEL=models/decor-qwen3-4b-dse,SHARD=$i,TOTAL_SHARDS=10,MODEL_SIZE=4b,NUM_GPUS=1 \
 #       configs/slurm/gen_math500_rollouts_1hr.sh
 #   done
 #
-#   # 8B model, 4 shards:
-#   for i in 0 1 2 3; do
-#     sbatch --account=SHAREGHI-SL3-GPU \
-#       --export=ALL,MODEL=models/structpo-qwen3-8b-stage1-merged,SHARD=$i,TOTAL_SHARDS=4,MODEL_SIZE=8b \
+#   # 8B model: 4 GPU per shard (TP=4 required), 5 shards of 100 problems (~44min each)
+#   for i in $(seq 0 4); do
+#     sbatch --account=SHAREGHI-SL3-GPU --gres=gpu:4 \
+#       --export=ALL,MODEL=models/structpo-qwen3-8b-stage1-merged,SHARD=$i,TOTAL_SHARDS=5,MODEL_SIZE=8b,NUM_GPUS=4 \
 #       configs/slurm/gen_math500_rollouts_1hr.sh
 #   done
 #
@@ -31,14 +33,20 @@
 #   python scripts/merge_rollout_shards.py \
 #     --shards data/rollouts/math500_4b_shard_*.json \
 #     --output data/rollouts/math500_4b_rollouts.json
+#
+# GPU-hrs budget:
+#   4B: 10 shards × 1 GPU × 1hr = 10 GPU-hrs
+#   8B: 5 shards × 4 GPU × 1hr = 20 GPU-hrs
+#   Total: 30 GPU-hrs
 # ============================================================
 
 set -euo pipefail
 
 MODEL=${MODEL:?Set MODEL env var}
 SHARD=${SHARD:?Set SHARD env var (0-indexed)}
-TOTAL_SHARDS=${TOTAL_SHARDS:-4}
+TOTAL_SHARDS=${TOTAL_SHARDS:-10}
 MODEL_SIZE=${MODEL_SIZE:-4b}
+NUM_GPUS=${NUM_GPUS:-1}
 PROBLEMS_TOTAL=500
 WORKDIR=/home/cs2175/rds/workspace/StructPO
 
@@ -59,7 +67,8 @@ OUTPUT="data/rollouts/math500_${MODEL_SIZE}_shard_${SHARD}.json"
 source /home/cs2175/rds/workspace/share/scripts/activate_env.sh structpo-eval
 
 echo "=== MATH-500 Rollout Generation (Shard ${SHARD}/${TOTAL_SHARDS}) ==="
-echo "Model: $MODEL"
+echo "Model: $MODEL (${MODEL_SIZE})"
+echo "GPUs: $NUM_GPUS (TP=$NUM_GPUS)"
 echo "Problems: offset=$OFFSET, count=$SUBSET (total=$PROBLEMS_TOTAL)"
 echo "Output: $OUTPUT"
 echo "Node: $(hostname), Job: $SLURM_JOB_ID"
@@ -113,7 +122,7 @@ python scripts/generate_rollouts.py \
     --num-rollouts 8 \
     --temperature 0.7 \
     --max-tokens 16384 \
-    --tensor-parallel 4 \
+    --tensor-parallel $NUM_GPUS \
     --offset $OFFSET \
     --subset $SUBSET \
     --output "$OUTPUT"
