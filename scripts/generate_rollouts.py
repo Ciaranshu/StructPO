@@ -54,13 +54,27 @@ def normalize_answer(ans: str) -> str:
     """Normalize a math answer for comparison."""
     ans = ans.strip()
     # Remove common LaTeX wrappers
-    for prefix in [r'\text{', r'\mathrm{', r'\mathbf{']:
+    for prefix in [r'\text{', r'\mathrm{', r'\mathbf{', r'\mbox{']:
         if ans.startswith(prefix) and ans.endswith('}'):
             ans = ans[len(prefix):-1]
+    # Remove degree symbols and units
+    ans = ans.replace(r'^\circ', '')
+    ans = re.sub(r'\\(?:text|mbox|mathrm)\{[^}]*\}', '', ans)  # \text{...}, \mbox{...}
+    # Remove currency symbols
+    ans = ans.replace(r'\$', '').replace('$', '')
+    # Remove base subscripts (e.g., 4210_{5} → 4210, 52_8 → 52)
+    ans = re.sub(r'_\{?\d+\}?$', '', ans)
+    # Remove variable prefix (e.g., x=5 → 5, y=3/4 → 3/4)
+    ans = re.sub(r'^[a-zA-Z]\s*[=∈]\s*', '', ans)
+    # Remove \in prefix
+    ans = ans.replace(r'\in', '')
     # Normalize fractions
     ans = ans.replace(r'\dfrac', r'\frac')
     # Remove \left and \right (cosmetic LaTeX, no mathematical meaning)
     ans = ans.replace(r'\left', '').replace(r'\right', '')
+    # Remove leading dot for decimals (e.g., .35625 → 0.35625)
+    if ans.startswith('.'):
+        ans = '0' + ans
     # Remove spaces
     ans = re.sub(r'\s+', '', ans)
     # Remove trailing period
