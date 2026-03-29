@@ -59,7 +59,7 @@ def normalize_answer(ans: str) -> str:
             ans = ans[len(prefix):-1]
     # Remove degree symbols and units
     ans = ans.replace(r'^\circ', '')
-    ans = re.sub(r'\\(?:text|mbox|mathrm)\{[^}]*\}', '', ans)  # \text{...}, \mbox{...}
+    ans = re.sub(r'\\(?:text|mbox|mathrm)\{[^}]*\}', '', ans)
     # Remove currency symbols
     ans = ans.replace(r'\$', '').replace('$', '')
     # Remove base subscripts (e.g., 4210_{5} → 4210, 52_8 → 52)
@@ -68,18 +68,65 @@ def normalize_answer(ans: str) -> str:
     ans = re.sub(r'^[a-zA-Z]\s*[=∈]\s*', '', ans)
     # Remove \in prefix
     ans = ans.replace(r'\in', '')
-    # Normalize fractions
+    # Normalize fractions: \dfrac → \frac, \frac AB → \frac{A}{B}
     ans = ans.replace(r'\dfrac', r'\frac')
+    # Handle \frac without braces: \frac 59 → \frac{5}{9}, \frac43 → \frac{4}{3}
+    ans = re.sub(r'\\frac\s*([0-9a-zA-Z])\s*([0-9a-zA-Z])', r'\\frac{\1}{\2}', ans)
+    # Handle \sqrt without braces: \sqrt2 → \sqrt{2}
+    ans = re.sub(r'\\sqrt\s*([0-9]+)', r'\\sqrt{\1}', ans)
     # Remove \left and \right (cosmetic LaTeX, no mathematical meaning)
     ans = ans.replace(r'\left', '').replace(r'\right', '')
     # Remove leading dot for decimals (e.g., .35625 → 0.35625)
     if ans.startswith('.'):
         ans = '0' + ans
+    # Remove thousands separators: 10,\!080 → 10080, 58,500 → 58500
+    ans = ans.replace(r',\!', '').replace(',', '')
+    # Normalize ± notation: 3 \pm 2 → sorted pair
     # Remove spaces
     ans = re.sub(r'\s+', '', ans)
     # Remove trailing period
     ans = ans.rstrip('.')
     return ans
+
+
+def check_correctness(predicted: str, ground_truth: str) -> bool:
+    """Check if predicted answer matches ground truth.
+
+    Handles multiple equivalent formats and multi-value answers.
+    """
+    pred_norm = normalize_answer(predicted)
+    gt_norm = normalize_answer(ground_truth)
+    if not pred_norm:
+        return False
+    # Direct match
+    if pred_norm == gt_norm:
+        return True
+    # Try stripping outer delimiters: (A) → A, \{...\} content match
+    for wrapper in [('(', ')'), ('{', '}'), ('[', ']')]:
+        if pred_norm.startswith(wrapper[0]) and pred_norm.endswith(wrapper[1]):
+            if pred_norm[1:-1] == gt_norm:
+                return True
+        if gt_norm.startswith(wrapper[0]) and gt_norm.endswith(wrapper[1]):
+            if gt_norm[1:-1] == pred_norm:
+                return True
+    # Multi-value: "1,-2" should match "-2,1" (sorted comparison)
+    if ',' in pred_norm and ',' in gt_norm:
+        pred_parts = sorted(pred_norm.split(','))
+        gt_parts = sorted(gt_norm.split(','))
+        if pred_parts == gt_parts:
+            return True
+    # ± expansion: "3±2√2" matches "3+2√2" or "3-2√2"
+    if r'\pm' in gt_norm:
+        base_parts = gt_norm.split(r'\pm')
+        if len(base_parts) == 2:
+            plus_version = normalize_answer(base_parts[0] + '+' + base_parts[1])
+            minus_version = normalize_answer(base_parts[0] + '-' + base_parts[1])
+            if pred_norm == plus_version or pred_norm == minus_version:
+                return True
+            # Check if pred contains both values as a set
+            if plus_version in pred_norm and minus_version in pred_norm:
+                return True
+    return False
 
 
 def check_correctness(predicted: str, ground_truth: str) -> bool:
